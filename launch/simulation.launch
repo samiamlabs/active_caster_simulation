@@ -9,7 +9,6 @@
 
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find dyno_gazebo)/worlds/turtlebot3_house.world"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="gui" value="$(arg gui)"/>
     <arg name="paused" value="$(arg paused)"/>
@@ -17,9 +16,9 @@
     <arg name="headless" value="$(arg headless)"/>
   </include>
 
-  <include file="$(find active_caster_simulation)/launch/load_robot_description.launch"/>
+  <include file="$(find active_caster_simulation)/launch/load_robot_description.launch.xml"/>
 
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
-  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model dyno -param robot_description -x 0.0 -y 0.0 -Y 0.0"/>
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model active_caster -param robot_description -x 0.0 -y 0.0 -Y 0.0"/>
 
 </launch>

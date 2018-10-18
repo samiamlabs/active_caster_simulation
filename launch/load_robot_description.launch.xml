@@ -1,4 +1,4 @@
 <launch>
   <!-- Load the URDF into the ROS Parameter Server -->
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find active_caster_controller)/test/urdf/robots/active_caster.xacro'"/>
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find active_caster_simulation)/robots/active_caster.xacro'"/>
 </launch>
