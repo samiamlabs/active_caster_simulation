@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!-- Dyno active caster base -->
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="../wheels/active_caster/active_caster.urdf.xacro"/>
+
+  <!-- Active caster characteristics -->
+  <xacro:property name="wheel_separation" value="0.33"/>
+  <xacro:property name="caster_height" value="0.055"/>
+
+  <!-- Base -->
+  <xacro:macro name="base">
+    <link name="base_link">
+    </link>
+
+    <!-- Base footprint -->
+    <link name="base_footprint"/>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <origin xyz="0 0 ${caster_height}" rpy="0 0 0"/>
+      <parent link="base_footprint"/>
+      <child link="base_link"/>
+    </joint>
+
+
+    <!-- Macros -->
+    <active_caster name="fl_caster" parent="base_link" x_offset="${wheel_separation/(sqrt(3)*2)}" y_offset="${wheel_separation/2}"/>
+    <active_caster name="fr_caster" parent="base_link" x_offset="${wheel_separation/(sqrt(3)*2)}" y_offset="${-wheel_separation/2}"/>
+    <active_caster name="rc_caster" parent="base_link" x_offset="${-wheel_separation/sqrt(3)}" y_offset="0"/>
+
+  </xacro:macro>
+
+</robot>

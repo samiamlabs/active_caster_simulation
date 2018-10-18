@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="active_caster" params="name x_offset y_offset parent">
+
+    <xacro:property name="wheel_radius" value="0.02"/>
+    <xacro:property name="wheel_width" value="0.015"/>
+    <xacro:property name="wheel_mass" value="0.1"/>
+
+    <xacro:property name="x_yoke_offset" value="-0.0676"/>
+    <xacro:property name="z_yoke_offset" value="-0.034"/>
+
+    <!-- Mount -->
+    <link name="${name}_mount_link"/>
+
+    <joint name="${name}_mount_joint" type="fixed">
+      <origin xyz="${x_offset} ${y_offset} 0" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="${name}_mount_link"/>
+    </joint>
+
+    <!-- Steer -->
+    <link name="${name}_steer_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.01" radius="0.0387"/>
+        </geometry>
+        <material name="blue"/>
+      </visual>
+    </link>
+
+    <joint name="${name}_steer_joint" type="continuous">
+      <parent link="${name}_mount_link"/>
+      <child link="${name}_steer_link"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="10000" velocity="10000"/>
+    </joint>
+
+    <!-- Wheel -->
+
+    <link name="${name}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+        </geometry>
+        <material name="orange"/>
+      </visual>
+    </link>
+
+    <joint name="${name}_wheel_joint" type="continuous">
+      <origin xyz="${x_yoke_offset} 0 ${z_yoke_offset}" rpy="${M_PI/2} 0 0"/>
+      <parent link="${name}_steer_link"/>
+      <child link="${name}_wheel_link"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="10000" velocity="10000"/>
+    </joint>
+
+    <!-- Transmission -->
+    <xacro:simple_transmission name="${name}_steer_joint" interface="PositionJointInterface"/>
+    <xacro:simple_transmission name="${name}_wheel_joint" interface="VelocityJointInterface"/>
+
+  </xacro:macro>
+</robot>
