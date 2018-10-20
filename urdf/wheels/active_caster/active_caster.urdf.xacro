@@ -2,17 +2,41 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
+  <xacro:include filename="active_caster.gazebo.xacro"/>
+
   <xacro:macro name="active_caster" params="name x_offset y_offset parent">
 
     <xacro:property name="wheel_radius" value="0.02"/>
     <xacro:property name="wheel_width" value="0.015"/>
     <xacro:property name="wheel_mass" value="0.1"/>
 
-    <xacro:property name="x_yoke_offset" value="-0.0676"/>
+    <xacro:property name="x_yoke_offset" value="-0.04"/>
     <xacro:property name="z_yoke_offset" value="-0.034"/>
 
     <!-- Mount -->
-    <link name="${name}_mount_link"/>
+    <link name="${name}_mount_link">
+      <!--
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.001" radius="0.001"/>
+        </geometry>
+      </visual>
+       -->
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.01" radius="0.01"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <box_inertia m="0.1" x="0.1" y="0.1" z="0.1"/>
+      </inertial>
+
+    </link>
 
     <joint name="${name}_mount_joint" type="fixed">
       <origin xyz="${x_offset} ${y_offset} 0" rpy="0 0 0"/>
@@ -25,10 +49,23 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <cylinder length="0.01" radius="0.0387"/>
+          <cylinder length="0.01" radius="0.03"/>
         </geometry>
         <material name="blue"/>
       </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.01" radius="0.01"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <box_inertia m="0.1" x="0.1" y="0.1" z="0.1"/>
+      </inertial>
     </link>
 
     <joint name="${name}_steer_joint" type="continuous">
@@ -48,6 +85,21 @@
         </geometry>
         <material name="orange"/>
       </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+        </geometry>
+        <material name="orange"/>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.5"/>
+        <cylinder_inertia m="0.5" r="${wheel_radius}" h="${wheel_width}"/>
+      </inertial>
+
     </link>
 
     <joint name="${name}_wheel_joint" type="continuous">
@@ -59,8 +111,12 @@
     </joint>
 
     <!-- Transmission -->
-    <xacro:simple_transmission name="${name}_steer_joint" interface="PositionJointInterface"/>
-    <xacro:simple_transmission name="${name}_wheel_joint" interface="VelocityJointInterface"/>
+
+    <xacro:simple_transmission name="${name}_steer_joint" interface="EffortJointInterface"/>
+    <xacro:simple_transmission name="${name}_wheel_joint" interface="EffortJointInterface"/>
+
+    <!-- Gazebo -->
+    <wheel_gazebo name="${name}_wheel_link"/>
 
   </xacro:macro>
 </robot>

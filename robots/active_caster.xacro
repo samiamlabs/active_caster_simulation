@@ -4,6 +4,7 @@
 
   <xacro:include filename="../urdf/materials/materials.xacro"/>
   <xacro:include filename="../urdf/utils.urdf.xacro"/>
+  <xacro:include filename="../urdf/plugins.gazebo.xacro"/>
 
   <!-- Set up definitions of parts of robot body -->
   <xacro:include filename="../urdf/base/active_caster_base.urdf.xacro"/>

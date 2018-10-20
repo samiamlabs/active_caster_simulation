@@ -3,6 +3,7 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
+  <xacro:include filename="active_caster_base.gazebo.xacro"/>
   <xacro:include filename="../wheels/active_caster/active_caster.urdf.xacro"/>
 
   <!-- Active caster characteristics -->
@@ -12,6 +13,27 @@
   <!-- Base -->
   <xacro:macro name="base">
     <link name="base_link">
+
+      <visual>
+        <origin xyz="0.2 0 0" rpy="0 ${M_PI/2} 0"/>
+        <geometry>
+          <cylinder length="0.02" radius="0.01"/>
+        </geometry>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0.2" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.1" radius="0.2"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="10.0"/>
+        <box_inertia m="10.0" x="0.3" y="0.3" z="0.1"/>
+      </inertial>
+
     </link>
 
     <!-- Base footprint -->
@@ -23,11 +45,23 @@
       <child link="base_link"/>
     </joint>
 
-
     <!-- Macros -->
+
+    <!-- Triangle -->
+    <!--
     <active_caster name="fl_caster" parent="base_link" x_offset="${wheel_separation/(sqrt(3)*2)}" y_offset="${wheel_separation/2}"/>
     <active_caster name="fr_caster" parent="base_link" x_offset="${wheel_separation/(sqrt(3)*2)}" y_offset="${-wheel_separation/2}"/>
     <active_caster name="rc_caster" parent="base_link" x_offset="${-wheel_separation/sqrt(3)}" y_offset="0"/>
+    -->
+
+    <!-- Square -->
+    <active_caster name="fl_caster" parent="base_link" x_offset="${wheel_separation/2}" y_offset="${wheel_separation/2}"/>
+    <active_caster name="fr_caster" parent="base_link" x_offset="${wheel_separation/2}" y_offset="${-wheel_separation/2}"/>
+    <active_caster name="rl_caster" parent="base_link" x_offset="${-wheel_separation/2}" y_offset="${wheel_separation/2}"/>
+    <active_caster name="rr_caster" parent="base_link" x_offset="${-wheel_separation/2}" y_offset="${-wheel_separation/2}"/>
+
+    <!-- Gazebo -->
+    <base_gazebo/>
 
   </xacro:macro>
 

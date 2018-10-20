@@ -1,0 +1,17 @@
+<launch>
+
+  <!-- Load robot description -->
+  <include file="$(find active_caster_simulation)/launch/include/load_robot_description.launch.xml"/>
+
+  <!-- Send fake joint values -->
+  <node name="joint_state_publihser" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="TRUE"/>
+  </node>
+
+  <!-- Publish joint states on tf -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+
+  <!-- Show in Rviz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find active_caster_simulation)/rviz/show.rviz"/>
+
+</launch>

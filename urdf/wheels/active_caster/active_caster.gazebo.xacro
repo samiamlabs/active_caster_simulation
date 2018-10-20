@@ -2,10 +2,10 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:macro name="drive_wheel_gazebo" params="name">
+  <xacro:macro name="wheel_gazebo" params="name">
     <!-- Contact model for the wheel surface -->
 
-   <gazebo reference="${name}_link">
+   <gazebo reference="${name}">
      <!--
      <kp>0.1</kp>
      <kd>0.1</kd>
@@ -16,7 +16,7 @@
      <mu2>1.0</mu2>
      <fdir1>1 0 0</fdir1>
      <maxVel>1.0</maxVel>
-     <minDepth>0.003</minDepth>
+     <minDepth>0.001</minDepth>
      <implicitSpringDamper>1</implicitSpringDamper>
      <material>Gazebo/DarkGrey</material>
    </gazebo>
