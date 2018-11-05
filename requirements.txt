@@ -1,0 +1,2 @@
+# active_caster_simulation requirements.txt
+-e https://github.com/studywolf/blog.git
