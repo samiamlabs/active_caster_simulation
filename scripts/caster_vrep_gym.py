@@ -131,7 +131,7 @@ class CasterBaseVrepEnv(vrep_env.VrepEnv):
             self.stop_simulation()
 
         self.dt = 0.01
-        # need to set simulation time step to custom in v-rep (1 ms)
+        # need to set simulation time step to custom in v-rep (10 ms)
         self.set_float_parameter(
             vrep.sim_floatparam_simulation_time_step, self.dt)
 
