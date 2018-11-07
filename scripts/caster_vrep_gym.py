@@ -24,12 +24,12 @@ class CasterBaseVrepEnv(vrep_env.VrepEnv):
 
         joint_names = [
             'fl_caster_wheel_joint',
-            'fr_caster_wheel_joint',
-            'rl_caster_wheel_joint',
-            'rr_caster_wheel_joint',
             'fl_caster_steer_joint',
+            'fr_caster_wheel_joint',
             'fr_caster_steer_joint',
+            'rl_caster_wheel_joint',
             'rl_caster_steer_joint',
+            'rr_caster_wheel_joint',
             'rr_caster_steer_joint',
         ]
 
