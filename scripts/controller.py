@@ -2,6 +2,7 @@ from caster_vrep_gym import CasterBaseVrepEnv
 
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability as tfp
 import pandas as pd
 
 import shutil
@@ -14,6 +15,7 @@ eager_execution = False
 logdir = 'Graph'
 shutil.rmtree('./' + logdir, ignore_errors=True)
 os.mkdir('./' + logdir)
+
 
 def reset_graph(seed=42):
     tf.reset_default_graph()
@@ -56,8 +58,8 @@ def create_caster_constats():
 
 
 def inverse_jacobian(joint_positions, caster_constants):
+    """Create mapping from operational space velocities to joint velocities."""
     with tf.name_scope('inverse_jacobian'):
-
         b = caster_constants[0]
         beta = caster_constants[1]
         h = caster_constants[2]
@@ -80,23 +82,51 @@ def inverse_jacobian(joint_positions, caster_constants):
         return inverse_jacobian
 
 
-def mass(joint_positions):
-    # create dummmy matrix
-    return tf.constant(np.diag([10.0, 10.0, 10.0]), dtype=tf.float32)
+def inertia(joint_positions):
+    """Create symmetric mass/inertia matrix in joint space."""
+    # TODO: replace dummy
+    with tf.name_scope('inertia'):
+        return tf.constant(np.diag([10.0, 10.0, 10.0]), dtype=tf.float32)
 
 
-def mass_operational_space(inverse_jacobian, mass_matrix):
-    return tf.transpose(inverse_jacobian) @ mass_matrix @ inverse_jacobian
+def inertia_operational_space(inverse_jacobian, inertia):
+    """Create mass/inertia matrix in operational space."""
+    with tf.name_scope('inertia_operational_space'):
+        return tf.transpose(inverse_jacobian) @ inertia @ inverse_jacobian
 
 
-# Centripital and coriolis coupling terms
-def cc_coupling(joint_positions, joint_velocities):  # centripital and coriolis coupling terms
+def cc_coupling(joint_positions, joint_velocities):
+    """Create joint space vector of centripital and Coriolis coupling terms."""
     # create dummy vector
-    return tf.constant([0.0, 0.0, 0.0], dtype=tf.float32)
+    with tf.name_scope('cc_coupling'):
+        return tf.constant([0.0, 0.0, 0.0], dtype=tf.float32)
 
-def cc_coupling_operational_space(joint_positions, joint_velocities, mass_matrix):
-    # create dummy vector
-    return tf.constant([0.0, 0.0, 0.0], dtype=tf.float32)
+
+def cc_coupling_operational_space(cc_coupling, inverse_jacobian,
+                                  inertia, base_velocities):
+    """Operational space vector of centripital and Coriolis coupling terms."""
+    with tf.name_scope('cc_coupling_operational_space'):
+        return tf.transpose(inverse_jacobian) @ (inertia @ inverse_jacobian @
+                                                 base_velocities + cc_coupling)
+
+
+def force_vector_end_effector(inertia_operational_space, base_acceleration,
+                              cc_coupling_operational_space):
+    """Force vector at the origin of the end effector coordinate system."""
+    with tf.name_scope('force_vector_end_effector'):
+        return (inertia_operational_space @ base_acceleration
+                + cc_coupling_operational_space)
+
+
+def wheel_constraint(inverse_jacobian):
+    """Create mapping from base velocity to joint speeds."""
+    with tf.name_scope('wheel_constraint'):
+        # TODO: Replace with improved version based on contact
+        # point velocities/forces
+
+        # Use the nonholonomic constraints from the inverse jacobian
+        # return inverse_jacobian
+        return tf.slice(inverse_jacobian, [0, 0], [2, 3])
 
 
 reset_graph()
@@ -132,6 +162,15 @@ command = tf.placeholder(tf.float32, shape=[3, ], name='command')
 with tf.name_scope('base_velocities_desired'):
     base_velocities_desired = tf.slice(command, begin=[0, ], size=[3, ])
 
+base_velocities = tf.constant(np.zeros([n_casters, 3]),
+                              tf.float32,
+                              name='base_velocities')
+
+with tf.name_scope('base_accelerations'):
+    base_accelerations = tf.constant(np.zeros([n_casters, 3]),
+                                     tf.float32,
+                                     name='base_accelerations')
+
 with tf.name_scope('inverse_jacobians'):
     inverse_jacobians = []
     for caster_index in range(n_casters):
@@ -140,31 +179,78 @@ with tf.name_scope('inverse_jacobians'):
                              caster_constants[caster_index]))
 
 with tf.name_scope('intertias'):
-    masses = []
+    inertias = []
     for caster_index in range(n_casters):
-        masses.append(mass(joint_positions[caster_index]))
+        inertias.append(inertia(joint_positions[caster_index]))
 
-with tf.name_scope('mass_operational_space'):
-    operational_space_masses = []
+with tf.name_scope('inertias_operational_space'):
+    intertias_operational_space = []
     for caster_index in range(n_casters):
-        operational_space_masses.append(
-            mass_operational_space(inverse_jacobians[caster_index],
-                                   masses[caster_index]))
+        intertias_operational_space.append(
+            inertia_operational_space(inverse_jacobians[caster_index],
+                                      inertias[caster_index]))
 
-with tf.name_scope('cc_coupling'):
+with tf.name_scope('cc_couplings'):
     cc_couplings = []
     for caster_index in range(n_casters):
         cc_couplings.append(cc_coupling(
                             joint_positions[caster_index],
                             joint_velocities[caster_index]))
 
+with tf.name_scope('cc_couplings_operational_space'):
+    cc_couplings_operational_space = []
+    for caster_index in range(n_casters):
+        cc_couplings_operational_space.append(
+            cc_coupling_operational_space(
+                tf.expand_dims(cc_couplings[caster_index], 1),
+                inverse_jacobians[caster_index],
+                inertias[caster_index],
+                tf.expand_dims(base_velocities[caster_index], 1)))
+
+with tf.name_scope('force_vectors_end_effector'):
+    force_vectors_end_effector = []
+    for caster_index in range(n_casters):
+        force_vectors_end_effector.append(
+            force_vector_end_effector(
+                intertias_operational_space[caster_index],
+                tf.expand_dims(base_accelerations[caster_index], 1),
+                tf.expand_dims(
+                    cc_couplings_operational_space[caster_index], 1)))
+
+inertia_base = tf.reduce_sum(intertias_operational_space,
+                             axis=0, name='inertia_base')
+
+cc_coupling_base = tf.reduce_sum(cc_couplings_operational_space,
+                                 axis=0, name='cc_coupling_base')
+
+force_base = tf.reduce_sum(force_vectors_end_effector,
+                           axis=0, name='force_base')
+
+with tf.name_scope('wheel_constraints'):
+    wheel_constraints = []
+    for caster_index in range(n_casters):
+        wheel_constraints.append(inverse_jacobians[caster_index])
+
+with tf.name_scope('inverse_wheel_constraints'):
+    inverse_wheel_constraints = []
+    for caster_index in range(n_casters):
+        inverse_wheel_constraints.append(
+            tfp.math.pinv(wheel_constraints[caster_index]))
+
 with tf.Session() as sess:
-    # print(inverse_jacobians[0].eval(feed_dict={observation: np.zeros(8)}))
+    feed_dict = {observation: np.arange(int(n_casters)*2.0*2.0)}
     # print(mass_matrices[0].eval(feed_dict={observation: np.zeros(8)}))
-    print(operational_space_masses[0].eval(feed_dict={observation: np.arange(int(n_casters)*2.0*2.0)}))
-    # print(cc_couplings[0].eval(feed_dict={observation: np.zeros(8)}))
-    print(joint_positions.eval(feed_dict={observation: np.arange(int(n_casters)*2.0*2.0)}))
-    print(joint_velocities.eval(feed_dict={observation: np.arange(int(n_casters)*2.0*2.0)}))
+    # print(intertias_operational_space[0].eval(feed_dict=feed_dict))
+    # print(joint_positions.eval(feed_dict=feed_dict))
+    # print(joint_velocities.eval(feed_dict=feed_dict))
+    # print(inertia_base.eval(feed_dict=feed_dict))
+    # print(force_vectors_end_effector[0].eval(feed_dict=feed_dict))
+    # print(force_base.eval(feed_dict=feed_dict))
+    # print(cc_couplings[0].eval(feed_dict=feed_dict))
+    # print(cc_couplings_operational_space[0].eval(feed_dict=feed_dict))
+    # print(inverse_jacobians[0].eval(feed_dict=feed_dict))
+    # print(wheel_constraints[0].eval(feed_dict=feed_dict))
+    print(inverse_wheel_constraints[0].eval(feed_dict=feed_dict))
 
 file_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
 file_writer.close()
@@ -196,4 +282,5 @@ def main(args):
 
 if __name__ == '__main__':
     import sys
+
     # sys.exit(main(sys.argv))
