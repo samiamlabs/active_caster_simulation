@@ -1,6 +1,7 @@
 from sniffer.api import * # import the really small API
 import os, termstyle
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 # you can customize the pass/fail colors like this
 pass_fg_color = termstyle.green
