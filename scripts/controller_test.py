@@ -233,6 +233,67 @@ class TestWheelConstrain(tf.test.TestCase):
 # --- Controller ---
 
 
+class testIntegrator(tf.test.TestCase):
+    def test_yield_correct_shape_and_range(self):
+        base_position = np.array([0.0, 0.0, 0.0])
+
+        # with tf.variable_scope('base'):
+        base_position_ = tf.get_variable('base_position', shape=3,
+                                         dtype=tf.float32,
+                                         initializer=tf.zeros_initializer)
+
+        base_velocity = tf.constant(np.array([0.1, 0.2, 0.3]), tf.float32)
+        dt = tf.constant(0.1, dtype=tf.float32)
+
+        integration_step = controller_graph.base_position_integration_step(
+                                    base_position_, base_velocity, dt)
+        with self.test_session():
+            tf.global_variables_initializer().run()
+            integration_step.eval()
+            self.assertShapeEqual(base_position, base_position_.read_value())
+            self.assertAllInRange(base_position_.read_value(),
+                                  lower_bound=-100.0, upper_bound=100.0)
+
+    def test_correct_position_after_one_step(self):
+        base_position = np.array([0.01, 0.02, 0.03])
+
+        base_position_ = tf.get_variable('base_position', shape=3,
+                                         dtype=tf.float32,
+                                         initializer=tf.zeros_initializer)
+
+        base_velocity = tf.constant(np.array([0.1, 0.2, 0.3]), tf.float32)
+        dt = tf.constant(0.1, dtype=tf.float32)
+
+        integration_step = controller_graph.base_position_integration_step(
+                                    base_position_, base_velocity, dt)
+
+        with self.test_session():
+            tf.global_variables_initializer().run()
+            integration_step.eval()
+            self.assertAllClose(base_position,
+                                base_position_.read_value())
+
+    def test_correct_position_after_multiple_steps(self):
+        base_position = np.array([0.1, 0.2, 0.3])
+
+        base_position_ = tf.get_variable('base_position', shape=3,
+                                         dtype=tf.float32,
+                                         initializer=tf.zeros_initializer)
+
+        base_velocity = tf.constant(np.array([0.1, 0.2, 0.3]), tf.float32)
+        dt = tf.constant(0.1, dtype=tf.float32)
+
+        integration_step = controller_graph.base_position_integration_step(
+                                    base_position_, base_velocity, dt)
+
+        with self.test_session():
+            tf.global_variables_initializer().run()
+            for count in range(10):
+                integration_step.eval()
+            self.assertAllClose(base_position,
+                                base_position_.read_value())
+
+
 class TestCompensator(tf.test.TestCase):
     def test_yield_correct_shape_and_range(self):
         base_position = tf.constant(np.zeros(3), tf.float32)

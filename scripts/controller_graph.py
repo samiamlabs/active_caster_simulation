@@ -164,6 +164,24 @@ def wheel_constraint(inverse_jacobian):
         # return inverse_jacobian
         return tf.slice(inverse_jacobian, [0, 0], [2, 3])
 
+# --- Controller ---
+
+
+def base_position_integration_step(base_position, base_velocity, dt):
+    """Integrate base velocity and update base_position variable."""
+    # with tf.variable_scope("base", reuse=True):
+    #     base_position = tf.get_variable('base_position', shape=3,
+    #                                     initializer=tf.zeros_initializer())
+    x, y, theta = tf.unstack(base_position)
+    x_dot, y_dot, theta_dot = tf.unstack(base_velocity)
+
+    # TODO: use Runge-Kutta or exact integration?
+    x += x_dot*dt
+    y += y_dot*dt
+    theta += theta_dot*dt
+
+    return base_position.assign(tf.stack([x, y, theta]))
+
 
 def compensator(base_position_desired, base_velocity_desired,
                 base_position, base_velocity, base_acceleration,
